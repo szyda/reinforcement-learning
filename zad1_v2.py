@@ -1,38 +1,40 @@
 import random
+import numpy
 
 class Agent:
-    qtable = []
-    for i in range(1, 7):
-        qtable.append([0,0])
+    def __init__(self):
+        self.qtable = []
+        for i in range(1, 7):
+            self.qtable.append([0,0])
 
-    move = [0, 1]
-    alfa = 0.1
-    gamma = 0.9
-    eps = 0.1
-
-    def get_action(self, state):
-        if random.uniform() < eps:
-            action = random.choice(move)
-        else:
-            action = get_best_actions(state)
-        return action
+        self.move = [0, 1]
+        self.alfa = 0.1
+        self.gamma = 0.9
+        self.eps = 0.1
 
     def get_best_actions(self, state):
-        if qtable[state][0] == qtable[state][1]:
-            action = random.choice(move)
+        if self.qtable[state][0] == self.qtable[state][1]:
+            action = random.choice(self.move)
         else:
-            action = max(qtable[state])
+            action = numpy.argmax(self.qtable[state])
+        return action
+
+    def get_action(self, state):
+        if random.uniform(0, 1) < self.eps:
+            action = random.choice(self.move)
+        else:
+            action = self.get_best_actions(state)
         return action
 
     def update(self, state, action, next_state, reward, done):
-        if done == 1:
-            qtable[state][action] = qtable[state][action] + alfa * (reward - qtable[state][action])
+        if done:
+            self.qtable[state][action] = self.qtable[state][action] + self.alfa * (reward - self.qtable[state][action])
         else:
-            qtable[state][action] = qtable[state][action] + alfa * (reward + gamma * max(qtable[next_state]) - qtable[state][action])
+            self.qtable[state][action] = self.qtable[state][action] + self.alfa * (reward + self.gamma * max(self.qtable[next_state]) - self.qtable[state][action])
 
     def show_qtable(self):
-        for row in qtable:
-            print(row)
+        for row in self.qtable:
+            print(f'{round(row[0], 3)}, {round(row[1], 3)}')
 
 
 class Environment():
@@ -44,7 +46,7 @@ class Environment():
         reward = 0
         done = 0
 
-        if action == 0:
+        if not action:
             self.state -= 1
             if self.state < 0:
                 self.state = 0
@@ -58,7 +60,8 @@ class Environment():
         return self.state, reward, done
 
     def reset(self):
-        state = 0
+        self.state = 0
+        return self.state
 
     def get_possible_actions(self):
         actions = [0, 1]
@@ -72,3 +75,20 @@ class Environment():
 
 def main():
     env = Environment()
+    agent = Agent()
+
+    for i in range(100):
+        state = env.reset()
+        done = 0
+        while not done:
+            action = agent.get_action(state)
+            next_state, r, done = env.step(action)
+            agent.update(state, action, next_state, r, done)
+            state = next_state
+
+    agent.show_qtable()
+
+
+if __name__ == '__main__':
+    main()
+
